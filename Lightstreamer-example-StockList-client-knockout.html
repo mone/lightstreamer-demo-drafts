@@ -1,0 +1,34 @@
+<script src="http://demos.lightstreamer.com/commons/lightstreamer_globals.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/knockout/3.1.0/knockout-min.js"></script>
+
+<p>Stock Name: <strong data-bind="text: stock_name"></strong></p>
+<p>Last Price: <strong data-bind="text: last_price"></strong></p>
+
+<script>
+
+    var lsClient = new LightstreamerClient("http://push.lightstreamer.com","DEMO");
+    lsClient.connect();
+    
+    function Model() {
+      this.stock_name = ko.observable("loading");
+      this.last_price = ko.observable("loading");
+    }
+    var myModel = new Model();
+    ko.applyBindings(myModel);
+
+  
+    var sub = new Subscription("MERGE","item2",["last_price","stock_name"]);
+    sub.addListener({
+      onItemUpdate: function(update) {
+        update.forEachChangedField(function(name,pos,val) {
+          console.log(val);
+          myModel[name](val);
+        });
+      }
+    });
+    sub.setDataAdapter("QUOTE_ADAPTER");
+    sub.setRequestedSnapshot("yes");
+    lsClient.subscribe(sub);
+    
+
+</script>

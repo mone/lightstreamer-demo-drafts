@@ -1,0 +1,102 @@
+<script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+<script src="http://code.highcharts.com/highcharts.js"></script>
+<script src="http://code.highcharts.com/modules/exporting.js"></script>
+
+<script src="http://demos.lightstreamer.com/commons/lightstreamer_globals_namespace.js"></script>
+
+<div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+
+
+<script>
+
+var lsClient = new Lightstreamer.LightstreamerClient("http://push.lightstreamer.com","DEMO");
+lsClient.connect();
+
+var subscription = new Lightstreamer.Subscription("MERGE", "item2", ["last_price","timestamp"]);
+subscription.setDataAdapter("QUOTE_ADAPTER");
+subscription.setRequestedSnapshot("yes");
+lsClient.subscribe(subscription);    
+
+
+$(function () {
+    
+    
+    $(document).ready(function () {
+        Highcharts.setOptions({
+            global: {
+                useUTC: false
+            }
+        });
+        
+        $('#container').highcharts({
+            chart: {
+                type: 'spline',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+                events: {
+                    load: function () {
+                        // set up the updating of the chart each second
+                        var series = this.series[0];
+                        subscription.addListener({
+                            onItemUpdate: function(obj) {
+                                console.log(obj.getValue("timestamp"));
+                                series.addPoint([Number(obj.getValue("timestamp")),
+                                                 Number(obj.getValue("last_price"))], true, true);
+                            }
+                        });
+                    }
+                }
+            },
+            title: {
+                text: 'Live random data'
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150
+            },
+            yAxis: {
+                title: {
+                    text: 'Value'
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#808080'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+                        Highcharts.numberFormat(this.y, 2);
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            exporting: {
+                enabled: false
+            },
+            series: [{
+                name: 'Random data',
+                data: (function () {
+                    // generate an array of random data
+                    var data = [],
+                        time = (new Date()).getTime(),
+                        i;
+                    
+                    for (i = -19; i <= 0; i += 1) {
+                        data.push({
+                            x: time + i * 1000,
+                            y: Math.random()
+                        });
+                    }
+                    return data;
+                }())
+            }]
+        });
+    });
+});
+    
+
+</script>
